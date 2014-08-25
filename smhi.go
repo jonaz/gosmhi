@@ -37,6 +37,10 @@ type response struct {
 	Timeseries    []timeSerie `json: "timeSeries"`
 }
 
+//2014-08-31T12:00:00Z
+
+//func (resp *response)
+
 type smhi struct {
 	request *request
 }
