@@ -12,22 +12,22 @@ import (
 const URL = "http://opendata-download-metfcst.smhi.se/api/category/pmp1.5g/version/1/geopoint/lat/{{.Latitude}}/lon/{{.Longitude}}/data.json"
 
 type timeSerie struct {
-	validTime string
-	t         float64
-	msl       float64
-	vis       float64
-	wd        int
-	ws        float64
-	r         float64
-	tstm      float64
-	tcc       float64
-	lcc       float64
-	mcc       float64
-	hcc       float64
-	gust      float64
-	pis       float64
-	pit       float64
-	pcat      float64
+	ValidTime string  `json: "validTime"` //Time
+	T         float64 `json: "t"`         //Temperature celcius
+	Msl       float64 `json: "msl"`       //Pressure reduced to MSL hPa
+	Vis       float64 `json: "vis"`       //Visibility km
+	Wd        int     `json: "wd"`        //wind direction degrees
+	Ws        float64 `json: "ws"`        //wind velocity m/s
+	R         int     `json: "r"`         //Relative humidity %
+	Tstm      int     `json: "tstm"`      //Probability thunderstorm %
+	Tcc       int     `json: "tcc"`       //Total cloud cover 0-8
+	Lcc       int     `json: "lcc"`       //Low cloud cover 0-8
+	Mcc       int     `json: "mcc"`       //Medium cloud cover 0-8
+	Hcc       int     `json: "hcc"`       //high cloud cover 0-8
+	Gust      float64 `json: "gust"`      //Wind gust m/s
+	Pis       float64 `json: "pis"`       //Precipitation intensity snow mm/h
+	Pit       float64 `json: "pit"`       //Precipitation intensity total mm/h
+	Pcat      int     `json: "pcat"`      //Category of precipitation, 0 no, 1 snow, 2 snow and rain, 3 rain, 4 drizzle, 5, freezing rain, 6 freezing drizzle
 }
 
 type response struct {
