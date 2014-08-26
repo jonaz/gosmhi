@@ -15,34 +15,103 @@ import (
 const URL = "http://opendata-download-metfcst.smhi.se/api/category/pmp1.5g/version/1/geopoint/lat/{{.Latitude}}/lon/{{.Longitude}}/data.json"
 
 type timeSerie struct {
-	ValidTime string    `json: "validTime"` //Time
+	ValidTime string    `json:"validTime"` //Time
 	Time      time.Time //Time in go
-	T         float64   `json: "t"`    //Temperature celcius
-	Msl       float64   `json: "msl"`  //Pressure reduced to MSL hPa
-	Vis       float64   `json: "vis"`  //Visibility km
-	Wd        int       `json: "wd"`   //wind direction degrees
-	Ws        float64   `json: "ws"`   //wind velocity m/s
-	R         int       `json: "r"`    //Relative humidity %
-	Tstm      int       `json: "tstm"` //Probability thunderstorm %
-	Tcc       int       `json: "tcc"`  //Total cloud cover 0-8
-	Lcc       int       `json: "lcc"`  //Low cloud cover 0-8
-	Mcc       int       `json: "mcc"`  //Medium cloud cover 0-8
-	Hcc       int       `json: "hcc"`  //high cloud cover 0-8
-	Gust      float64   `json: "gust"` //Wind gust m/s
-	Pis       float64   `json: "pis"`  //Precipitation intensity snow mm/h
-	Pit       float64   `json: "pit"`  //Precipitation intensity total mm/h
-	Pcat      int       `json: "pcat"` //Category of precipitation, 0 no, 1 snow, 2 snow and rain, 3 rain, 4 drizzle, 5, freezing rain, 6 freezing drizzle
+	T         float64   `json:"t"`    //Temperature celcius
+	Msl       float64   `json:"msl"`  //Pressure reduced to MSL hPa
+	Vis       float64   `json:"vis"`  //Visibility km
+	Wd        int       `json:"wd"`   //wind direction degrees
+	Ws        float64   `json:"ws"`   //wind velocity m/s
+	R         int       `json:"r"`    //Relative humidity %
+	Tstm      int       `json:"tstm"` //Probability thunderstorm %
+	Tcc       int       `json:"tcc"`  //Total cloud cover 0-8
+	Lcc       int       `json:"lcc"`  //Low cloud cover 0-8
+	Mcc       int       `json:"mcc"`  //Medium cloud cover 0-8
+	Hcc       int       `json:"hcc"`  //high cloud cover 0-8
+	Gust      float64   `json:"gust"` //Wind gust m/s
+	Pis       float64   `json:"pis"`  //Precipitation intensity snow mm/h
+	Pit       float64   `json:"pit"`  //Precipitation intensity total mm/h
+	Pcat      int       `json:"pcat"` //Category of precipitation, 0 no, 1 snow, 2 snow and rain, 3 rain, 4 drizzle(duggregn), 5, freezing rain, 6 freezing drizzle(duggregn)
 }
 
 type response struct {
-	Lat           float64     `json: "lat"`
-	Lon           float64     `json: "lon"`
-	ReferenceTime string      `json: "referenceTime"`
-	TimeSeries    []timeSerie `json: "timeSeries"`
+	Lat           float64     `json:"lat"`
+	Lon           float64     `json:"lon"`
+	ReferenceTime string      `json:"referenceTime"`
+	TimeSeries    []timeSerie `json:"timeSeries"`
 }
 
-//time,_:=time.Parse(time.RFC3339, "2014-08-26T07:00:00Z")
-//fmt.Println(time)
+func (resp *response) GetTotalCloudCoverageByDate(date time.Time) int {
+
+	i := 0
+	cloud := 0
+	for _, row := range resp.TimeSeries {
+		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() {
+			i++
+			cloud = cloud + row.Tcc
+		}
+	}
+	return cloud / i
+}
+func (resp *response) GetTotalCloudCoverageByHour(date time.Time) int {
+
+	for _, row := range resp.TimeSeries {
+		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() && date.Hour() == row.Time.Hour() {
+			return row.Tcc
+		}
+	}
+	return 0
+}
+func (resp *response) GetPrecipitationByHour(date time.Time) int {
+	for _, row := range resp.TimeSeries {
+		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() && date.Hour() == row.Time.Hour() {
+			if row.Pcat == 6 {
+				return 6
+			}
+			if row.Pcat == 5 {
+				return 5
+			}
+			if row.Pcat == 4 {
+				return 4
+			}
+			if row.Pcat == 3 {
+				return 3
+			}
+			if row.Pcat == 2 {
+				return 2
+			}
+			if row.Pcat == 1 {
+				return 1
+			}
+		}
+	}
+	return 0
+}
+func (resp *response) GetPrecipitationByDate(date time.Time) int {
+	for _, row := range resp.TimeSeries {
+		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() {
+			if row.Pcat == 6 {
+				return 6
+			}
+			if row.Pcat == 5 {
+				return 5
+			}
+			if row.Pcat == 4 {
+				return 4
+			}
+			if row.Pcat == 3 {
+				return 3
+			}
+			if row.Pcat == 2 {
+				return 2
+			}
+			if row.Pcat == 1 {
+				return 1
+			}
+		}
+	}
+	return 0
+}
 
 func (resp *response) GetMaxTempByDate(date time.Time) (float64, error) {
 	if resp == nil || resp.TimeSeries == nil {
@@ -50,7 +119,6 @@ func (resp *response) GetMaxTempByDate(date time.Time) (float64, error) {
 	}
 	temp := resp.TimeSeries[0].T
 	for _, row := range resp.TimeSeries {
-		//if strings.Contains(row.ValidTime, date) {
 		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() {
 			if row.T > temp {
 				temp = row.T
@@ -65,7 +133,6 @@ func (resp *response) GetMinTempByDate(date time.Time) (float64, error) {
 	}
 	temp := resp.TimeSeries[0].T
 	for _, row := range resp.TimeSeries {
-		//if strings.Contains(row.ValidTime, date) {
 		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() {
 			if row.T < temp {
 				temp = row.T
@@ -73,6 +140,34 @@ func (resp *response) GetMinTempByDate(date time.Time) (float64, error) {
 		}
 	}
 	return temp, nil
+}
+func (resp *response) GetMinWindByDate(date time.Time) (float64, error) {
+	if resp == nil || resp.TimeSeries == nil {
+		return 0, errors.New("Invalid response")
+	}
+	wind := resp.TimeSeries[0].Ws
+	for _, row := range resp.TimeSeries {
+		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() {
+			if row.Ws < wind {
+				wind = row.Ws
+			}
+		}
+	}
+	return wind, nil
+}
+func (resp *response) GetMaxWindByDate(date time.Time) (float64, error) {
+	if resp == nil || resp.TimeSeries == nil {
+		return 0, errors.New("Invalid response")
+	}
+	wind := resp.TimeSeries[0].Ws
+	for _, row := range resp.TimeSeries {
+		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() {
+			if row.Ws > wind {
+				wind = row.Ws
+			}
+		}
+	}
+	return wind, nil
 }
 
 type smhi struct {
