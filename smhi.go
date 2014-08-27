@@ -56,15 +56,28 @@ func (resp *response) GetTotalCloudCoverageByDate(date time.Time) int {
 func (resp *response) GetTotalCloudCoverageByHour(date time.Time) int {
 
 	for _, row := range resp.TimeSeries {
-		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() && date.Hour() == row.Time.Hour() {
+		if isSameHour(date, row.Time) {
 			return row.Tcc
 		}
 	}
 	return 0
 }
+
+func isSameHour(time1 time.Time, time2 time.Time) bool {
+	if time1.Year() == time2.Year() && time1.Day() == time2.Day() && time1.Month() == time2.Month() && time1.Hour() == time2.Hour() {
+		return true
+	}
+	return false
+}
+func isSameDate(time1 time.Time, time2 time.Time) bool {
+	if time1.Year() == time2.Year() && time1.Day() == time2.Day() && time1.Month() == time2.Month() {
+		return true
+	}
+	return false
+}
 func (resp *response) GetPrecipitationByHour(date time.Time) int {
 	for _, row := range resp.TimeSeries {
-		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() && date.Hour() == row.Time.Hour() {
+		if isSameHour(date, row.Time) {
 			//TODO rewrite thiw. Perhaps make a sum of Pcat for the whole day and calculate thresholds?
 			if row.Pcat == 6 {
 				return 6
@@ -90,7 +103,7 @@ func (resp *response) GetPrecipitationByHour(date time.Time) int {
 }
 func (resp *response) GetPrecipitationByDate(date time.Time) int {
 	for _, row := range resp.TimeSeries {
-		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() {
+		if isSameDate(date, row.Time) {
 			//TODO rewrite thiw. Perhaps make a sum of Pcat for the whole day and calculate thresholds?
 			if row.Pcat == 6 {
 				return 6
@@ -121,7 +134,7 @@ func (resp *response) GetMaxTempByDate(date time.Time) (float64, error) {
 	}
 	temp := resp.TimeSeries[0].T
 	for _, row := range resp.TimeSeries {
-		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() {
+		if isSameDate(date, row.Time) {
 			if row.T > temp {
 				temp = row.T
 			}
@@ -135,7 +148,7 @@ func (resp *response) GetMinTempByDate(date time.Time) (float64, error) {
 	}
 	temp := resp.TimeSeries[0].T
 	for _, row := range resp.TimeSeries {
-		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() {
+		if isSameDate(date, row.Time) {
 			if row.T < temp {
 				temp = row.T
 			}
@@ -149,7 +162,7 @@ func (resp *response) GetMinWindByDate(date time.Time) (float64, error) {
 	}
 	wind := resp.TimeSeries[0].Ws
 	for _, row := range resp.TimeSeries {
-		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() {
+		if isSameDate(date, row.Time) {
 			if row.Ws < wind {
 				wind = row.Ws
 			}
@@ -163,7 +176,7 @@ func (resp *response) GetMaxWindByDate(date time.Time) (float64, error) {
 	}
 	wind := resp.TimeSeries[0].Ws
 	for _, row := range resp.TimeSeries {
-		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() {
+		if isSameDate(date, row.Time) {
 			if row.Ws > wind {
 				wind = row.Ws
 			}
