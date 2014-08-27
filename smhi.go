@@ -65,6 +65,7 @@ func (resp *response) GetTotalCloudCoverageByHour(date time.Time) int {
 func (resp *response) GetPrecipitationByHour(date time.Time) int {
 	for _, row := range resp.TimeSeries {
 		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() && date.Hour() == row.Time.Hour() {
+			//TODO rewrite thiw. Perhaps make a sum of Pcat for the whole day and calculate thresholds?
 			if row.Pcat == 6 {
 				return 6
 			}
@@ -90,6 +91,7 @@ func (resp *response) GetPrecipitationByHour(date time.Time) int {
 func (resp *response) GetPrecipitationByDate(date time.Time) int {
 	for _, row := range resp.TimeSeries {
 		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() {
+			//TODO rewrite thiw. Perhaps make a sum of Pcat for the whole day and calculate thresholds?
 			if row.Pcat == 6 {
 				return 6
 			}

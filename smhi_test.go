@@ -27,17 +27,13 @@ func TestRequest(t *testing.T) {
 }
 
 func TestGetMaxTempByDate(t *testing.T) {
-	//testSmhi := New()
-	//testResponse := testSmhi.GetByLatLong("58.59", "16.18")
-	date := time.Date(2014, 8, 26, 0, 0, 0, 0, time.Local)
+	date := time.Now()
 	temp, _ := testResponse.GetMaxTempByDate(date)
 	fmt.Println(temp)
 }
 
 func TestGetMinTempByDate(t *testing.T) {
-	//testSmhi := New()
-	//testResponse := testSmhi.GetByLatLong("58.59", "16.18")
-	date := time.Date(2014, 8, 26, 0, 0, 0, 0, time.Local)
+	date := time.Now()
 	temp, _ := testResponse.GetMinTempByDate(date)
 	fmt.Println(temp)
 }
