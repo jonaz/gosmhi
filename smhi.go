@@ -132,9 +132,14 @@ func (resp *response) GetMaxTempByDate(date time.Time) (float64, error) {
 	if resp == nil || resp.TimeSeries == nil {
 		return 0, errors.New("Invalid response")
 	}
-	temp := resp.TimeSeries[0].T
+	var temp float64
+	first := true
 	for _, row := range resp.TimeSeries {
 		if isSameDate(date, row.Time) {
+			if first {
+				temp = row.T
+				first = false
+			}
 			if row.T > temp {
 				temp = row.T
 			}
@@ -146,9 +151,14 @@ func (resp *response) GetMinTempByDate(date time.Time) (float64, error) {
 	if resp == nil || resp.TimeSeries == nil {
 		return 0, errors.New("Invalid response")
 	}
-	temp := resp.TimeSeries[0].T
+	var temp float64
+	first := true
 	for _, row := range resp.TimeSeries {
 		if isSameDate(date, row.Time) {
+			if first {
+				temp = row.T
+				first = false
+			}
 			if row.T < temp {
 				temp = row.T
 			}
@@ -160,9 +170,14 @@ func (resp *response) GetMinWindByDate(date time.Time) (float64, error) {
 	if resp == nil || resp.TimeSeries == nil {
 		return 0, errors.New("Invalid response")
 	}
-	wind := resp.TimeSeries[0].Ws
+	var wind float64
+	first := true
 	for _, row := range resp.TimeSeries {
 		if isSameDate(date, row.Time) {
+			if first {
+				wind = row.Ws
+				first = false
+			}
 			if row.Ws < wind {
 				wind = row.Ws
 			}
@@ -174,9 +189,14 @@ func (resp *response) GetMaxWindByDate(date time.Time) (float64, error) {
 	if resp == nil || resp.TimeSeries == nil {
 		return 0, errors.New("Invalid response")
 	}
-	wind := resp.TimeSeries[0].Ws
+	var wind float64
+	first := true
 	for _, row := range resp.TimeSeries {
 		if isSameDate(date, row.Time) {
+			if first {
+				wind = row.Ws
+				first = false
+			}
 			if row.Ws > wind {
 				wind = row.Ws
 			}
