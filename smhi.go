@@ -12,33 +12,66 @@ import (
 	"time"
 )
 
-const URL = "http://opendata-download-metfcst.smhi.se/api/category/pmp1.5g/version/1/geopoint/lat/{{.Latitude}}/lon/{{.Longitude}}/data.json"
+//const URL = "http://opendata-download-metfcst.smhi.se/api/category/pmp1.5g/version/1/geopoint/lat/{{.Latitude}}/lon/{{.Longitude}}/data.json"
+const URL = "http://opendata-download-metfcst.smhi.se/api/category/pmp2g/version/2/geotype/point/lon/{{.Longitude}}/lat/{{.Latitude}}/data.json"
 
-type timeSerie struct {
-	ValidTime string    `json:"validTime"` //Time
-	Time      time.Time //Time in go
-	T         float64   `json:"t"`    //Temperature celcius
-	Msl       float64   `json:"msl"`  //Pressure reduced to MSL hPa
-	Vis       float64   `json:"vis"`  //Visibility km
-	Wd        int       `json:"wd"`   //wind direction degrees
-	Ws        float64   `json:"ws"`   //wind velocity m/s
-	R         int       `json:"r"`    //Relative humidity %
-	Tstm      int       `json:"tstm"` //Probability thunderstorm %
-	Tcc       int       `json:"tcc"`  //Total cloud cover 0-8
-	Lcc       int       `json:"lcc"`  //Low cloud cover 0-8
-	Mcc       int       `json:"mcc"`  //Medium cloud cover 0-8
-	Hcc       int       `json:"hcc"`  //high cloud cover 0-8
-	Gust      float64   `json:"gust"` //Wind gust m/s
-	Pis       float64   `json:"pis"`  //Precipitation intensity snow mm/h
-	Pit       float64   `json:"pit"`  //Precipitation intensity total mm/h
-	Pcat      int       `json:"pcat"` //Category of precipitation, 0 no, 1 snow, 2 snow and rain, 3 rain, 4 drizzle(duggregn), 5, freezing rain, 6 freezing drizzle(duggregn)
+//type timeSerie struct {
+//ValidTime string    `json:"validTime"` //Time
+//Time      time.Time //Time in go
+//T         float64   `json:"t"`    //Temperature celcius
+//Msl       float64   `json:"msl"`  //Pressure reduced to MSL hPa
+//Vis       float64   `json:"vis"`  //Visibility km
+//Wd        int       `json:"wd"`   //wind direction degrees
+//Ws        float64   `json:"ws"`   //wind velocity m/s
+//R         int       `json:"r"`    //Relative humidity %
+//Tstm      int       `json:"tstm"` //Probability thunderstorm %
+//Tcc       int       `json:"tcc"`  //Total cloud cover 0-8
+//Lcc       int       `json:"lcc"`  //Low cloud cover 0-8
+//Mcc       int       `json:"mcc"`  //Medium cloud cover 0-8
+//Hcc       int       `json:"hcc"`  //high cloud cover 0-8
+//Gust      float64   `json:"gust"` //Wind gust m/s
+//Pis       float64   `json:"pis"`  //Precipitation intensity snow mm/h
+//Pit       float64   `json:"pit"`  //Precipitation intensity total mm/h
+//Pcat      int       `json:"pcat"` //Category of precipitation, 0 no, 1 snow, 2 snow and rain, 3 rain, 4 drizzle(duggregn), 5, freezing rain, 6 freezing drizzle(duggregn)
+//}
+
+//type response struct {
+////Lat           float64     `json:"lat"`
+////Lon           float64     `json:"lon"`
+//ReferenceTime string      `json:"referenceTime"`
+//TimeSeries    []timeSerie `json:"timeSeries"`
+type Parameter struct {
+	Level     int       `json:"level"`
+	LevelType string    `json:"levelType"`
+	Name      string    `json:"name"`
+	Unit      string    `json:"unit"`
+	Values    []float64 `json:"values"`
+}
+type parameters []Parameter
+
+func (p parameters) GetParameter(param string) (float64, error) {
+	for _, v := range p {
+		if v.Name == param {
+			return v.Values[0], nil
+		}
+
+	}
+	return 0, fmt.Errorf("Parameter not found")
+
 }
 
 type response struct {
-	Lat           float64     `json:"lat"`
-	Lon           float64     `json:"lon"`
-	ReferenceTime string      `json:"referenceTime"`
-	TimeSeries    []timeSerie `json:"timeSeries"`
+	ApprovedTime string `json:"approvedTime"`
+	Geometry     struct {
+		Coordinates [][]float64 `json:"coordinates"`
+		Type        string      `json:"type"`
+	} `json:"geometry"`
+	ReferenceTime string `json:"referenceTime"`
+	TimeSeries    []struct {
+		Parameters parameters `json:"parameters"`
+		ValidTime  time.Time  `json:"validTime"`
+		//Time       time.Time
+	} `json:"timeSeries"`
 }
 
 func (resp *response) GetTotalCloudCoverageByDate(date time.Time) int {
@@ -46,9 +79,13 @@ func (resp *response) GetTotalCloudCoverageByDate(date time.Time) int {
 	i := 0
 	cloud := 0
 	for _, row := range resp.TimeSeries {
-		if date.Year() == row.Time.Year() && date.Day() == row.Time.Day() && date.Month() == row.Time.Month() {
+		if date.Year() == row.ValidTime.Year() && date.Day() == row.ValidTime.Day() && date.Month() == row.ValidTime.Month() {
 			i++
-			cloud = cloud + row.Tcc
+			data, err := row.Parameters.GetParameter("tcc_mean")
+			if err != nil {
+				return 0
+			}
+			cloud = cloud + int(data)
 		}
 	}
 	return cloud / i
@@ -56,8 +93,9 @@ func (resp *response) GetTotalCloudCoverageByDate(date time.Time) int {
 func (resp *response) GetTotalCloudCoverageByHour(date time.Time) int {
 
 	for _, row := range resp.TimeSeries {
-		if isSameHour(date, row.Time) {
-			return row.Tcc
+		if isSameHour(date, row.ValidTime) {
+			data, _ := row.Parameters.GetParameter("tcc_mean")
+			return int(data)
 		}
 	}
 	return 0
@@ -77,24 +115,25 @@ func isSameDate(time1 time.Time, time2 time.Time) bool {
 }
 func (resp *response) GetPrecipitationByHour(date time.Time) int {
 	for _, row := range resp.TimeSeries {
-		if isSameHour(date, row.Time) {
+		if isSameHour(date, row.ValidTime) {
 			//TODO rewrite thiw. Perhaps make a sum of Pcat for the whole day and calculate thresholds?
-			if row.Pcat == 6 {
+			pcat, _ := row.Parameters.GetParameter("pcat")
+			if pcat == 6 {
 				return 6
 			}
-			if row.Pcat == 5 {
+			if pcat == 5 {
 				return 5
 			}
-			if row.Pcat == 4 {
+			if pcat == 4 {
 				return 4
 			}
-			if row.Pcat == 3 {
+			if pcat == 3 {
 				return 3
 			}
-			if row.Pcat == 2 {
+			if pcat == 2 {
 				return 2
 			}
-			if row.Pcat == 1 {
+			if pcat == 1 {
 				return 1
 			}
 		}
@@ -103,24 +142,25 @@ func (resp *response) GetPrecipitationByHour(date time.Time) int {
 }
 func (resp *response) GetPrecipitationByDate(date time.Time) int {
 	for _, row := range resp.TimeSeries {
-		if isSameDate(date, row.Time) {
+		if isSameDate(date, row.ValidTime) {
 			//TODO rewrite thiw. Perhaps make a sum of Pcat for the whole day and calculate thresholds?
-			if row.Pcat == 6 {
+			pcat, _ := row.Parameters.GetParameter("pcat")
+			if pcat == 6 {
 				return 6
 			}
-			if row.Pcat == 5 {
+			if pcat == 5 {
 				return 5
 			}
-			if row.Pcat == 4 {
+			if pcat == 4 {
 				return 4
 			}
-			if row.Pcat == 3 {
+			if pcat == 3 {
 				return 3
 			}
-			if row.Pcat == 2 {
+			if pcat == 2 {
 				return 2
 			}
-			if row.Pcat == 1 {
+			if pcat == 1 {
 				return 1
 			}
 		}
@@ -135,13 +175,14 @@ func (resp *response) GetMaxTempByDate(date time.Time) (float64, error) {
 	var temp float64
 	first := true
 	for _, row := range resp.TimeSeries {
-		if isSameDate(date, row.Time) {
+		if isSameDate(date, row.ValidTime) {
 			if first {
-				temp = row.T
+				temp, _ = row.Parameters.GetParameter("t")
 				first = false
 			}
-			if row.T > temp {
-				temp = row.T
+			t, _ := row.Parameters.GetParameter("t")
+			if t > temp {
+				temp = t
 			}
 		}
 	}
@@ -154,13 +195,14 @@ func (resp *response) GetMinTempByDate(date time.Time) (float64, error) {
 	var temp float64
 	first := true
 	for _, row := range resp.TimeSeries {
-		if isSameDate(date, row.Time) {
+		if isSameDate(date, row.ValidTime) {
 			if first {
-				temp = row.T
+				temp, _ = row.Parameters.GetParameter("t")
 				first = false
 			}
-			if row.T < temp {
-				temp = row.T
+			t, _ := row.Parameters.GetParameter("t")
+			if t < temp {
+				temp = t
 			}
 		}
 	}
@@ -173,13 +215,14 @@ func (resp *response) GetMinWindByDate(date time.Time) (float64, error) {
 	var wind float64
 	first := true
 	for _, row := range resp.TimeSeries {
-		if isSameDate(date, row.Time) {
+		if isSameDate(date, row.ValidTime) {
 			if first {
-				wind = row.Ws
+				wind, _ = row.Parameters.GetParameter("ws")
 				first = false
 			}
-			if row.Ws < wind {
-				wind = row.Ws
+			ws, _ := row.Parameters.GetParameter("ws")
+			if ws < wind {
+				wind = ws
 			}
 		}
 	}
@@ -192,13 +235,14 @@ func (resp *response) GetMaxWindByDate(date time.Time) (float64, error) {
 	var wind float64
 	first := true
 	for _, row := range resp.TimeSeries {
-		if isSameDate(date, row.Time) {
+		if isSameDate(date, row.ValidTime) {
 			if first {
-				wind = row.Ws
+				wind, _ = row.Parameters.GetParameter("ws")
 				first = false
 			}
-			if row.Ws > wind {
-				wind = row.Ws
+			ws, _ := row.Parameters.GetParameter("ws")
+			if ws > wind {
+				wind = ws
 			}
 		}
 	}
@@ -265,7 +309,7 @@ func (smhi *smhi) doRequest() (*response, error) {
 	response := &response{}
 	err = json.Unmarshal(body, response)
 
-	parseValidTime(response)
+	//parseValidTime(response)
 
 	if err != nil {
 		fmt.Println(err)
@@ -275,14 +319,14 @@ func (smhi *smhi) doRequest() (*response, error) {
 	return response, nil
 }
 
-func parseValidTime(resp *response) {
-	var t time.Time
-	var err error
-	for key, row := range resp.TimeSeries {
-		t, err = time.Parse(time.RFC3339, row.ValidTime)
-		if err != nil {
-			fmt.Println("error parsing time")
-		}
-		resp.TimeSeries[key].Time = t
-	}
-}
+//func parseValidTime(resp *response) {
+//var t time.Time
+//var err error
+//for key, row := range resp.TimeSeries {
+//t, err = time.Parse(time.RFC3339, row.ValidTime)
+//if err != nil {
+//fmt.Println("error parsing time")
+//}
+//resp.TimeSeries[key].ValidTime = t
+//}
+//}

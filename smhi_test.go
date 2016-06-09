@@ -13,7 +13,7 @@ func TestGetUrl(t *testing.T) {
 
 	testSmhi = New()
 	url := testSmhi.request.getUrl("58.59", "16.18")
-	expectedUrl := "http://opendata-download-metfcst.smhi.se/api/category/pmp1.5g/version/1/geopoint/lat/58.59/lon/16.18/data.json"
+	expectedUrl := "http://opendata-download-metfcst.smhi.se/api/category/pmp2g/version/2/geotype/point/lon/16.18/lat/58.59/data.json"
 
 	if url == expectedUrl {
 		return
@@ -24,6 +24,7 @@ func TestGetUrl(t *testing.T) {
 func TestRequest(t *testing.T) {
 	smhi := New()
 	testResponse = smhi.GetByLatLong("56.8769", "14.8092")
+	fmt.Printf("%#v\n", testResponse)
 }
 
 func TestGetMaxTempByDate(t *testing.T) {
