@@ -1,5 +1,7 @@
 package gosmhi
 
+//docs: http://opendata.smhi.se/apidocs/metfcst/parameters.html
+
 import (
 	"bytes"
 	"encoding/json"
