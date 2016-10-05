@@ -168,6 +168,17 @@ func (resp *response) GetPrecipitationByDate(date time.Time) int {
 	return 0
 }
 
+func (resp *response) GetMeanPrecipitationByDate(date time.Time) float64 {
+	p := 0.0
+	for _, row := range resp.TimeSeries {
+		if isSameDate(date, row.ValidTime) {
+			pmean, _ := row.Parameters.GetParameter("pmax")
+			p = p + pmean
+		}
+	}
+	return p
+}
+
 func (resp *response) GetMaxTempByDate(date time.Time) (float64, error) {
 	if resp == nil || resp.TimeSeries == nil {
 		return 0, errors.New("Invalid response")
