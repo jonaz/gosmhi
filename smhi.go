@@ -296,17 +296,17 @@ func New() *smhi { // {{{
 	return &smhi{request, nil}
 } // }}}
 
-func (smhi *smhi) GetByLatLong(latitude string, longitude string) *response {
+func (smhi *smhi) GetByLatLong(latitude string, longitude string) (*response, error) {
 	//check if we can get from cache?
 	smhi.request.url = smhi.request.getUrl(latitude, longitude)
 
 	resp, err := smhi.doRequest()
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 
 	smhi.response = resp
-	return resp
+	return resp, nil
 }
 
 func (smhi *smhi) doRequest() (*response, error) {
